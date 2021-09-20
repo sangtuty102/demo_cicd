@@ -1,4 +1,4 @@
-package com.example.datting;
+package com.sangth.datting;
 
 import io.flutter.embedding.android.FlutterActivity;
 
