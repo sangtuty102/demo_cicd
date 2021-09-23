@@ -6,7 +6,7 @@ on:
       - v*
 
 jobs:
-   deploy:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -20,46 +20,74 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
         working-directory: ./
-      - name: Format code
-        run: flutter format --set-exit-if-changed .
-        working-directory: ./
-      - name: Static analysis
-        run: flutter analyze
-        working-directory: ./
-      - name: Flutter tests
-        run: flutter test
-        working-directory: ./
-      - name: Flutter build Android
+      # - name: Format code
+      #   run: flutter format --set-exit-if-changed .
+      #   working-directory: ./
+      #
+      # - name: Static analysis
+      #   run: flutter analyze
+      #   working-directory: ./
+      #
+      # - name: Flutter tests
+      #   run: flutter test
+      #   working-directory: ./
+
+      - name: Flutter build apk
         run: flutter build apk
         working-directory: ./
-      # - name: Push APK to Releases
+
+      # - name: Push APK to Releases Tag
       #   uses: ncipollo/release-action@v1
       #   with:
       #     artifacts: "build/app/outputs/flutter-apk/*.apk"
       #     token: ${{ secrets.TOKEN }}
-      - name: Sign Release
-        uses: r0adkll/sign-android-release@v1
-        with:
-          releaseDirectory: app/build/outputs/bundle/release
-          signingKeyBase64: ${{ secrets.SIGNING_KEY }}
-          alias: ${{ secrets.ALIAS }}
-          keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
-          keyPassword: ${{ secrets.KEY_PASSWORD }}
 
-      - name: Tag Release
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+        working-directory: ./android
+
+      - name: Decode Keystore
+        env:
+          ENCODED_STRING: ${{ secrets.KEYSTORE }}
         run: |
-          version_name=${GITHUB_REF##*/}
-          echo "Tagging release with tag $version_name"
-          git tag $version_name release/$version_name
-          git push origin --tags
-      - name: Create service_account.json
-        run: echo '${{ secrets.SERVICE_ACCOUNT_JSON }}' > service_account.json
+          TMP_KEYSTORE_FILE_PATH="${RUNNER_TEMP}"/keystore
+          mkdir "${TMP_KEYSTORE_FILE_PATH}"
+          echo $ENCODED_STRING | base64 -di > "${TMP_KEYSTORE_FILE_PATH}"/your_keystore_file.jks
+
+      - name: Build prod release .aab
+        run: ./gradlew app:bundleRelease
+        env:
+          SIGNING_KEY_ALIAS: ${{ secrets.ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          SIGNING_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
+        working-directory: ./android
+      # - name: Upload git tag folder release
+      #   uses: actions/upload-artifact@v2
+      #   with:
+      #     name: Build Artifacts
+      #     path: build/app/outputs/
+      #
+      # - name: mapping text
+      #   uses: actions/upload-artifact@master
+      #   with:
+      #     name: mapping.txt
+      #     path: build/app/outputs/mapping/release/mapping.txt
+      # - name: Tag Release
+      #   run: |
+      #     version_name=${GITHUB_REF##*/}
+      #     echo "Tagging release with tag $version_name"
+      #     git tag $version_name release/$version_name
+      #     git push origin --tags
+      # - name: Create service_account.json
+      #   run: echo '${{ secrets.SERVICE_ACCOUNT_JSON }}' > service_account.json
 
       - name: Deploy to Alpha
         uses: r0adkll/upload-google-play@v1
         with:
-          serviceAccountJson: service_account.json
-          packageName: com.jshvarts.flows
-          releaseFile: app/build/outputs/bundle/release/app-release.aab
-          track: alpha
-          whatsNewDirectory: distribution/
+          # serviceAccountJson: service_account.json
+          serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
+          packageName: com.goline.test_cicd
+          releaseFile: build/app/outputs/bundle/release/app-release.aab
+          track: Alpha
+          # whatsNewDirectory:
+          mappingFile: build/app/outputs/mapping/release/mapping.txt
