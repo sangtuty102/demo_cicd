@@ -86,8 +86,8 @@ jobs:
         with:
           # serviceAccountJson: service_account.json
           serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
-          packageName: com.goline.test_cicd
+          packageName: com.sangth.datting
           releaseFile: build/app/outputs/bundle/release/app-release.aab
-          track: Alpha
+          track: "Alpha"
           # whatsNewDirectory:
           mappingFile: build/app/outputs/mapping/release/mapping.txt
