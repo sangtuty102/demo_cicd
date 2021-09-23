@@ -24,10 +24,10 @@ if (flutterVersionName == null) {
 apply plugin: 'com.android.application'
 apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 
-def keystorePropertiesFile = rootProject.file('key.properties')
-if (keystorePropertiesFile.exists()) {
-    localProperties.load(new FileInputStream(keystorePropertiesFile))
-}
+// def keystorePropertiesFile = rootProject.file('key.properties')
+// if (keystorePropertiesFile.exists()) {
+//     localProperties.load(new FileInputStream(keystorePropertiesFile))
+// }
 
 android {
     compileSdkVersion 30
@@ -42,16 +42,31 @@ android {
     }
 
     signingConfigs {
+        // release {
+        //     keyAlias localProperties['keyAlias']
+        //     keyPassword localProperties['keyPassword']
+        //     storeFile localProperties['storeFile'] ? file(localProperties['storeFile']) : null
+        //     storePassword localProperties['storePassword']
+        // }
         release {
-            keyAlias localProperties['keyAlias']
-            keyPassword localProperties['keyPassword']
-            storeFile localProperties['storeFile'] ? file(localProperties['storeFile']) : null
-            storePassword localProperties['storePassword']
+            def tmpFilePath = System.getProperty("user.home") + "/work/_temp/keystore/"
+            def allFilesFromDir = new File(tmpFilePath).listFiles()
+
+            if (allFilesFromDir != null) {
+                def keystoreFile = allFilesFromDir.first()
+                keystoreFile.renameTo("keystore/your_keystore.jks")
+            }
+
+            storeFile = file("keystore/your_keystore.jks")
+            storePassword System.getenv("SIGNING_STORE_PASSWORD")
+            keyAlias System.getenv("SIGNING_KEY_ALIAS")
+            keyPassword System.getenv("SIGNING_KEY_PASSWORD")
         }
     }
     buildTypes {
         release {
-            signingConfig signingConfigs.release
+            // signingConfig signingConfigs.release
+            signingConfig signingConfigs.debug
         }
     }
 }
